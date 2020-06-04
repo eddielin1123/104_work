@@ -44,12 +44,7 @@ def search_104_tocsv(word, total_page):
         bs = BeautifulSoup(res.text, 'html.parser')
         bs_title = bs.findAll('article', {'class': 'b-block--top-bord job-list-item b-clearfix js-job-item'})
         for a in bs_title:
-            # #     # print('職稱:',a['data-job-name'])
-            # print('公司名稱:', a['data-cust-name'])
-            # print('職缺:', a.find('a', {'class': 'js-job-link'}).text)
             title_url = 'https:' + a.find('a')['href']
-            # print('職缺URL:', title_url)
-            # 正則解取網頁參數並代入網址
             pattern = re.compile('[0-9].*\?')
             get_data = pattern.findall(title_url)[0].split('/')[2].split('?')[0]
             referer = 'https://www.104.com.tw/job/' + get_data
@@ -66,7 +61,6 @@ def search_104_tocsv(word, total_page):
             # 職務類別
             job_category_str = '職務類別:'
             job_category = json_data['data']['jobDetail']['jobCategory']
-            # print(job_category)
             for j in job_category:
                 job_category_str += j['description'] + '\t'
             # print(job_category_str)
@@ -137,7 +131,6 @@ def search_104_tocsv(word, total_page):
             JOB_WELFARE.append(welfare)
             JOB_CONTACT.append(contact)
             JOB_URL.append(title_url)
-            print('')
             if 'python' in full_content and require_specialty:
                 python.append(1)
             else:
@@ -208,8 +201,6 @@ def search_104_tocsv(word, total_page):
     df = pd.DataFrame(dict)
     print('總共擷取{}個結果'.format(len(JOB_URL)))
     return df
-    # print(len(python),len(java),len(javascript),len(r_language),len(mysql),len(mongodb),len(nosql),len(sql),len(aws),len(gcp),len(azure),len(data_mining),len(ai),len(deep_learning),len(cloud_service))
-    # print(len(COMPANY),len(JOB),len(JOB_CONTENT),len(JOB_REQUIRE),len(JOB_CONTACT),len(JOB_WELFARE),len(JOB_URL))
 
 def main():
     start_time = datetime.now()
