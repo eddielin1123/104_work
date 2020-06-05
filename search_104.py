@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import sys
 from datetime import datetime
-import os
+import jieba
 
 def search_104_tocsv(word, total_page):
     page = 1
@@ -43,11 +43,14 @@ def search_104_tocsv(word, total_page):
         res = requests.get(url, headers=headers, params=data)
         bs = BeautifulSoup(res.text, 'html.parser')
         bs_title = bs.findAll('article', {'class': 'b-block--top-bord job-list-item b-clearfix js-job-item'})
-        for a in bs_title:
+        for i,a in enumerate(bs_title):
+            print('職稱:',a['data-job-name'])
+            print('公司名稱:', a['data-cust-name'])
+            print('職缺:', a.find('a', {'class': 'js-job-link'}).text)
             title_url = 'https:' + a.find('a')['href']
+            # 正則解取網頁參數並代入網址
             pattern = re.compile('[0-9].*\?')
             get_data = pattern.findall(title_url)[0].split('/')[2].split('?')[0]
-            referer = 'https://www.104.com.tw/job/' + get_data
             json_url = 'https://www.104.com.tw/job/ajax/content/' + get_data
             title_headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36",
@@ -63,7 +66,6 @@ def search_104_tocsv(word, total_page):
             job_category = json_data['data']['jobDetail']['jobCategory']
             for j in job_category:
                 job_category_str += j['description'] + '\t'
-            # print(job_category_str)
             # 工作待遇
             job_salary = '工作待遇: ' + json_data['data']['jobDetail']['salary']
             # 工作性質
@@ -73,8 +75,7 @@ def search_104_tocsv(word, total_page):
             elif job_attr == 2:
                 job_attr = '工作性質: 兼職'
             # 上班地點
-            job_loc = '上班地點: ' + json_data['data']['jobDetail']['addressRegion'] + json_data['data']['jobDetail'][
-                'addressDetail']
+            job_loc = '上班地點: ' + json_data['data']['jobDetail']['addressRegion'] + json_data['data']['jobDetail']['addressDetail']
             # 管理責任
             job_resp = '管理責任: ' + json_data['data']['jobDetail']['manageResp']
             # 出差外派
@@ -131,75 +132,108 @@ def search_104_tocsv(word, total_page):
             JOB_WELFARE.append(welfare)
             JOB_CONTACT.append(contact)
             JOB_URL.append(title_url)
-            if 'python' in full_content and require_specialty:
-                python.append(1)
+
+            jieba.load_userdict('dict.txt')
+            jieba_list = '|'.join(jieba.cut(str(full_content + full_require).lower()))
+            if 'python' in jieba_list:
+                python.append('1')
             else:
-                python.append(0)
-            if 'java' in full_content and require_specialty:
-                java.append(1)
+                python.append('0')
+            if 'java' in jieba_list:
+                java.append('1')
             else:
-                java.append(0)
-            if 'javascript' in full_content and require_specialty:
-                javascript.append(1)
+                java.append('0')
+            if 'javascript' in jieba_list:
+                javascript.append('1')
             else:
-                javascript.append(0)
-            if 'r語言' or 'R語言' in full_content and require_specialty:
-                r_language.append(1)
+                javascript.append('0')
+            if 'r' in jieba_list:
+                r_language.append('1')
             else:
-                r_language.append(0)
-            if 'MySQL' or 'MYSQL' in full_content and require_specialty:
-                mysql.append(1)
+                r_language.append('0')
+            if 'mysql' in jieba_list:
+                mysql.append('1')
             else:
-                mysql.append(0)
-            if 'mongodb' or 'MongoDB' in full_content and require_specialty:
-                mongodb.append(1)
+                mysql.append('0')
+            if 'mongo' in jieba_list:
+                mongodb.append('1')
             else:
-                mongodb.append(0)
-            if 'NoSQL' or 'NOSQL' or 'No SQL' in full_content and require_specialty:
-                nosql.append(1)
+                mongodb.append('0')
+            if 'nosql' in jieba_list:
+                nosql.append('1')
             else:
-                nosql.append(0)
-            sql_filter = re.compile('^(SQL|sql)$')
-            if 'sql' or 'SQL' in sql_filter.findall(full_content) and sql_filter.findall(require_specialty):
-                sql.append(1)
+                nosql.append('0')
+            if 'sql' in jieba_list:
+                sql.append('1')
             else:
-                sql.append(0)
-            if 'aws' or 'AWS' in full_content and require_specialty:
-                aws.append(1)
+                sql.append('0')
+            if 'aws' in jieba_list:
+                aws.append('1')
             else:
-                aws.append(0)
-            if 'gcp' or 'GCP' in full_content and require_specialty:
-                gcp.append(1)
+                aws.append('0')
+            if 'gcp' in jieba_list:
+                gcp.append('1')
             else:
-                gcp.append(0)
-            if 'azure' or 'AZURE' in full_content and require_specialty:
-                azure.append(1)
+                gcp.append('0')
+            if 'azure' in jieba_list:
+                azure.append('1')
             else:
-                azure.append(0)
-            if 'data mining' in full_content.lower() and require_specialty.lower():
-                data_mining.append(1)
+                azure.append('0')
+            if 'data mining' in full_content.lower() or 'data mining' in full_require.lower():
+                data_mining.append('1')
             else:
-                data_mining.append(0)
-            if 'ai' or '人工智慧' or '人工智慧' in full_content.lower() and require_specialty.lower():
-                ai.append(1)
+                data_mining.append('0')
+            if 'ai' in jieba_list:
+                ai.append('1')
+            elif '人工智慧' in jieba_list or '人工智能' in jieba_list:
+                ai.append('1')
             else:
-                ai.append(0)
-            if 'deep learning' or '深度學習' in full_content.lower() and require_specialty.lower():
-                deep_learning.append(1)
+                ai.append('0')
+            if 'deep learning' in full_content or 'deep learning' in full_require:
+                deep_learning.append('1')
             else:
-                deep_learning.append(0)
-            if 'cloud service' or '雲端服務' or '雲服務' in full_content.lower() and require_specialty.lower():
-                cloud_service.append(1)
+                deep_learning.append('0')
+            if 'cloud service' in full_content or 'cloud service' in full_require:
+                cloud_service.append('1')
+            elif '雲端服務' in jieba_list:
+                cloud_service.append('1')
+            elif '雲服務' in jieba_list:
+                cloud_service.append('1')
             else:
-                cloud_service.append(0)
+                cloud_service.append('0')
+
         page += 1
     dict = {'Job_compay': COMPANY, 'Job Openings': JOB, 'Job_contetn': JOB_CONTENT, 'Job require': JOB_REQUIRE,
             'Job welfare': JOB_WELFARE, 'Job contact': JOB_CONTACT, 'URL': JOB_URL, 'python': python, 'java': java,
-            'javascript': javascript, 'r語言': r_language, 'mysql': mysql, 'mongodb': mongodb, 'nosql': mongodb,
+            'javascript': javascript, 'r語言': r_language, 'mysql': mysql, 'mongodb': mongodb, 'nosql': nosql,
             'sql': sql, 'aws': aws, 'gcp': gcp, 'azure': azure, 'data mining': data_mining, 'ai': ai,
             'deep learning': deep_learning, 'cloud service': cloud_service}
     df = pd.DataFrame(dict)
-    print('總共擷取{}個結果'.format(len(JOB_URL)))
+
+    # 技術需求統計
+    skill_count = {
+        'python':python.count('1'),
+        'java':java.count('1'),
+        'javascript':javascript.count('1'),
+        'r語言':r_language.count('1'),
+        'mysql':mysql.count('1'),
+        'mongodb':mongodb.count('1'),
+        'nosql':nosql.count('1'),
+        'sql':sql.count('1'),
+        'aws':aws.count('1'),
+        'gcp':gcp.count('1'),
+        'azure':azure.count('1'),
+        'data mining':data_mining.count('1'),
+        'ai':ai.count('1'),
+        'deep learning':deep_learning.count('1'),
+        'cloud service':cloud_service.count('1')
+    }
+    s1 = ''
+    for s in skill_count:
+        s1 += s + ':' + str(skill_count[s]) + '\n'
+    with open('./skill_count', 'w', encoding='utf-8') as f:
+        f.write(s1)
+    print('成功擷取{}筆資料'.format(len(JOB_URL)))
     return df
 
 def main():
@@ -207,9 +241,9 @@ def main():
     word = sys.argv[1]
     page = sys.argv[2]
     search_104_tocsv(str(word),int(page)).to_csv('./104_search_result.csv')
+    # search_104_tocsv(str(word),int(page))
     end_time = datetime.now()
     total_time = end_time-start_time
-
     print('總共花了',total_time.seconds,'秒')
 
 if __name__ == '__main__':
