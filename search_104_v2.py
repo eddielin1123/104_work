@@ -125,6 +125,8 @@ def search_104_tocsv(word, total_page):
                 'email'] + '\n' + json_data['data']['contact']['phone']
             full_require = require_role + '\n' + require_workExp + '\n' + require_edu + '\n' + require_maj + '\n' + require_lan + '\n' + \
                            require_specialty + '\n' + require_skill + '\n' + require_other
+            
+            # 將擷取的資料放進一開始宣告的list
             COMPANY.append(a['data-cust-name'])
             JOB.append(a.find('a', {'class': 'js-job-link'}).text)
             JOB_CONTENT.append(full_content)
@@ -132,7 +134,8 @@ def search_104_tocsv(word, total_page):
             JOB_WELFARE.append(welfare)
             JOB_CONTACT.append(contact)
             JOB_URL.append(title_url)
-
+            
+            # 使用結巴斷詞 搜尋字串(例如python)
             jieba.load_userdict('dict.txt')
             jieba_list = '|'.join(jieba.cut(str(full_content + full_require).lower()))
             if 'python' in jieba_list:
@@ -203,6 +206,7 @@ def search_104_tocsv(word, total_page):
                 cloud_service.append('0')
 
         page += 1
+    # 使用pandas.DataFrame將資料整理成csv(excel)格式    
     dict = {'Job_compay': COMPANY, 'Job Openings': JOB, 'Job_contetn': JOB_CONTENT, 'Job require': JOB_REQUIRE,
             'Job welfare': JOB_WELFARE, 'Job contact': JOB_CONTACT, 'URL': JOB_URL, 'python': python, 'java': java,
             'javascript': javascript, 'r語言': r_language, 'mysql': mysql, 'mongodb': mongodb, 'nosql': nosql,
@@ -240,8 +244,8 @@ def main():
     start_time = datetime.now()
     word = sys.argv[1]
     page = sys.argv[2]
+    # 將資料匯出成csv檔
     search_104_tocsv(str(word),int(page)).to_csv('./104_search_result.csv')
-    # search_104_tocsv(str(word),int(page))
     end_time = datetime.now()
     total_time = end_time-start_time
     print('總共花了',total_time.seconds,'秒')
